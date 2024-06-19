@@ -66,6 +66,25 @@ const generateId = () => {
 
 app.post('/api/persons', (request, response) => {
     const body = request.body;
+    const doesNameExists = phonebook.some(contact => {
+        return contact.name.toLowerCase() === body.name.toLowerCase()
+    })
+
+    if (!body.name || !body.number) {
+        return response
+            .status(400)
+            .json({
+                error: 'name or/and number is missing'
+            });
+    }
+
+    if (doesNameExists) {
+        return response
+            .status(400)
+            .json({
+                error: 'name already exists in the phonebook'
+            })
+    }
 
     const contact = {
         id: generateId(),
