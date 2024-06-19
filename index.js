@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
 
+app.use(express.json())
+
 let phonebook = [
     {
         "id": 1,
@@ -52,8 +54,28 @@ app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id);
     phonebook = phonebook.filter(person => person.id !== id);
 
-    console.log(phonebook);
     response.status(204).end();
+})
+
+const generateId = () => {
+    const maxId = phonebook.length > 0
+        ? Math.max(...phonebook.map(n => n.id))
+        : 0
+    return maxId + 1
+}
+
+app.post('/api/persons', (request, response) => {
+    const body = request.body;
+
+    const contact = {
+        id: generateId(),
+        name: body.name,
+        number: body.number
+    };
+
+    phonebook = phonebook.concat(contact);
+
+    response.json(contact);
 })
 
 const PORT = 3001;
