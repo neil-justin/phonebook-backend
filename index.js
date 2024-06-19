@@ -22,7 +22,15 @@ let phonebook = [
         "name": "Mary Poppendieck",
         "number": "39-23-6423122"
     }
+
 ];
+
+app.get('/info', (request, response) => {
+    response.send(
+        `<p>Phonebook has info for ${phonebook.length} people</p>
+        <p>${Date()}</p>`
+    )
+});
 
 app.get('/api/persons', (request, response) => {
     response.json(phonebook);
