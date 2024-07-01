@@ -1,6 +1,9 @@
+require('dotenv').config();
+
 const express = require('express');
 const morgan = require('morgan');
-const cors = require('cors')
+const cors = require('cors');
+const Contact = require('./models/contact');
 
 const app = express();
 
@@ -11,27 +14,36 @@ app.use(express.static('dist'))
 
 let phonebook = [
     {
-        "id": 1,
         "name": "Arto Hellas",
         "number": "040-123456"
     },
     {
-        "id": 2,
         "name": "Ada Lovelace",
         "number": "39-44-5323523"
     },
     {
-        "id": 3,
         "name": "Dan Abramov",
         "number": "12-43-234345"
     },
     {
-        "id": 4,
         "name": "Mary Poppendieck",
         "number": "39-23-6423122"
     }
-
 ];
+
+Contact.find({})
+    .then(savedPhonebook => {
+        if (savedPhonebook.length < 1) {
+            phonebook.forEach(defaultContact => {
+                const contact = new Contact(defaultContact);
+
+                contact.save()
+            });
+        }
+
+        phonebook = savedPhonebook;
+
+    });
 
 app.get('/info', (request, response) => {
     response.send(
@@ -41,19 +53,17 @@ app.get('/info', (request, response) => {
 });
 
 app.get('/api/persons', (request, response) => {
-    response.json(phonebook);
+    Contact.find({})
+        .then(phonebook => {
+            response.json(phonebook);
+        })
 });
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = phonebook.find(person => person.id === id)
-
-    if (person) {
-        response.json(person)
-    } else {
-        response.statusMessage = 'We have no page for that'
-        response.status(404).end()
-    }
+    Contact.findById(request.params.id)
+        .then(contact => {
+            response.json(contact);
+        })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -63,18 +73,12 @@ app.delete('/api/persons/:id', (request, response) => {
     response.status(204).end();
 })
 
-const generateId = () => {
-    const maxId = phonebook.length > 0
-        ? Math.max(...phonebook.map(n => n.id))
-        : 0
-    return maxId + 1
-}
-
 app.post('/api/persons', (request, response) => {
     const body = request.body;
+
     const doesNameExists = phonebook.some(contact => {
         return contact.name.toLowerCase() === body.name.toLowerCase()
-    })
+    });
 
     if (!body.name || !body.number) {
         return response
@@ -92,18 +96,20 @@ app.post('/api/persons', (request, response) => {
             })
     }
 
-    const contact = {
-        id: generateId(),
+    const contact = new Contact({
         name: body.name,
         number: body.number
-    };
+    });
 
-    phonebook = phonebook.concat(contact);
+    contact.save()
+        .then(savedContact => {
+            phonebook = phonebook.concat(savedContact);
 
-    response.json(contact);
+            response.json(savedContact);
+        });
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
